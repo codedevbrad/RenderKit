@@ -4,17 +4,16 @@ import { Button } from "./Button";
 import { InputContainer } from "./Container";
 import { DownloadButton } from "./DownloadButton";
 import { ErrorComp } from "./Error";
-import { Input } from "./Input";
 import { ProgressBar } from "./ProgressBar";
 import { Spacing } from "./Spacing";
-import { COMP_NAME, CompositionProps } from "../../types/constants";
+import { COMP_NAME, CompositionProps, Segment } from "../../types/constants";
 import { useRendering } from "../helpers/use-rendering";
 
 export const RenderControls: React.FC<{
-  text: string;
-  setText: React.Dispatch<React.SetStateAction<string>>;
+  segments: Segment[];
+  setSegments: React.Dispatch<React.SetStateAction<Segment[]>>;
   inputProps: z.infer<typeof CompositionProps>;
-}> = ({ text, setText, inputProps }) => {
+}> = ({ segments, setSegments, inputProps }) => {
   const { renderMedia, state, undo } = useRendering(COMP_NAME, inputProps);
 
   return (
@@ -23,15 +22,9 @@ export const RenderControls: React.FC<{
       state.status === "invoking" ||
       state.status === "error" ? (
         <>
-          <Input
-            disabled={state.status === "invoking"}
-            setText={setText}
-            text={text}
-          ></Input>
-          <Spacing></Spacing>
           <AlignEnd>
             <Button
-              disabled={state.status === "invoking"}
+              disabled={state.status === "invoking" || segments.length === 0}
               loading={state.status === "invoking"}
               onClick={renderMedia}
             >
