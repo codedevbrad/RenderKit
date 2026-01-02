@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
 import { Spacing } from "./Spacing";
-import { Segment } from "../../types/constants";
+import { Segment, Layer } from "../../types/constants";
 import { cn } from "../lib/utils";
 import { GiphyPicker } from "./GiphyPicker";
 
@@ -14,6 +14,8 @@ interface SegmentModalProps {
   onSave: (segment: Segment) => void;
   segment?: Segment | null;
   defaultStart?: number;
+  layers?: Layer[];
+  defaultLayerId?: string | null;
 }
 
 export const SegmentModal: React.FC<SegmentModalProps> = ({
@@ -22,6 +24,8 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
   onSave,
   segment,
   defaultStart = 0,
+  layers = [],
+  defaultLayerId = null,
 }) => {
   const [segmentType, setSegmentType] = useState<"text" | "code" | "audio" | "gif">("text");
   const [start, setStart] = useState(0);
@@ -38,6 +42,7 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
   const [isLoadingDuration, setIsLoadingDuration] = useState(false);
   const [gifUrl, setGifUrl] = useState("");
   const [gifName, setGifName] = useState("");
+  const [selectedLayerId, setSelectedLayerId] = useState<string>("");
 
   useEffect(() => {
     if (segment) {
@@ -46,6 +51,7 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
       setDuration(segment.duration);
       setFadeIn(segment.fadeIn);
       setFadeOut(segment.fadeOut);
+      setSelectedLayerId(segment.layerId);
       if (segment.type === "text") {
         setText(segment.text);
       } else if (segment.type === "code") {
@@ -64,7 +70,7 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
         setGifName(segment.name || "");
       }
     } else {
-      // Reset to defaults for new segment
+      // Reset to defaults for new segment (only when modal opens or segment changes)
       setSegmentType("text");
       setStart(defaultStart);
       setDuration(3);
@@ -79,8 +85,61 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
       setAudioFileName("");
       setGifUrl("");
       setGifName("");
+      // Set default layer - prefer defaultLayerId if it matches segment type, then first matching type layer
+      const matchingTypeLayers = layers.filter(l => l.type === "video");
+      
+      let targetLayer;
+      if (defaultLayerId) {
+        const defaultLayer = layers.find(l => l.id === defaultLayerId);
+        // Use defaultLayerId if it's a video layer (default segment type is text)
+        if (defaultLayer && defaultLayer.type === "video") {
+          targetLayer = defaultLayer;
+        }
+      }
+      // Fall back to first matching type layer
+      if (!targetLayer && matchingTypeLayers.length > 0) {
+        targetLayer = matchingTypeLayers[0];
+      }
+      setSelectedLayerId(targetLayer?.id || "");
     }
-  }, [segment, defaultStart, isOpen]);
+  }, [segment, defaultStart, isOpen, defaultLayerId, layers]);
+
+  // Handle segment type change
+  const handleSegmentTypeChange = (newType: "text" | "code" | "audio" | "gif") => {
+    setSegmentType(newType);
+    
+    // Clear fields that don't belong to the new type
+    if (newType !== "text") {
+      setText("");
+    }
+    if (newType !== "code") {
+      setCode("// Your code here");
+      setLanguage("javascript");
+    }
+    if (newType !== "audio") {
+      // Revoke blob URL if it exists
+      if (audioUrl && audioUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(audioUrl);
+      }
+      setAudioUrl("");
+      setAudioName("");
+      setAudioFileName("");
+      setVolume(1);
+    }
+    if (newType !== "gif") {
+      setGifUrl("");
+      setGifName("");
+    }
+    
+    // Auto-select appropriate layer
+    if (newType === "audio") {
+      const audioLayer = layers.find(l => l.type === "audio");
+      if (audioLayer) setSelectedLayerId(audioLayer.id);
+    } else {
+      const videoLayer = layers.find(l => l.type === "video");
+      if (videoLayer) setSelectedLayerId(videoLayer.id);
+    }
+  };
 
   // Handle GIF selection from GIPHY picker
   const handleGifSelect = (url: string, title: string) => {
@@ -146,6 +205,11 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
       return;
     }
 
+    if (!selectedLayerId) {
+      alert("Please select a layer");
+      return;
+    }
+
     const newSegment: Segment =
       segmentType === "text"
         ? {
@@ -155,6 +219,7 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
             text,
             fadeIn,
             fadeOut,
+            layerId: selectedLayerId,
           }
         : segmentType === "code"
         ? {
@@ -165,6 +230,7 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
             language,
             fadeIn,
             fadeOut,
+            layerId: selectedLayerId,
           }
         : segmentType === "audio"
         ? {
@@ -176,6 +242,7 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
             volume,
             fadeIn,
             fadeOut,
+            layerId: selectedLayerId,
           }
         : {
             type: "gif",
@@ -185,10 +252,31 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
             name: gifName || undefined,
             fadeIn,
             fadeOut,
+            layerId: selectedLayerId,
           };
     onSave(newSegment);
     onClose();
   };
+
+  // Filter layers based on segment type
+  const availableLayers = layers.filter(layer => {
+    if (segmentType === "audio") {
+      return layer.type === "audio";
+    } else {
+      return layer.type === "video";
+    }
+  });
+
+  // Update selected layer when segment type changes (for new segments only)
+  useEffect(() => {
+    if (!segment && availableLayers.length > 0) {
+      const currentSelected = availableLayers.find(l => l.id === selectedLayerId);
+      if (!currentSelected) {
+        // Current selection is not valid for this segment type, select first available
+        setSelectedLayerId(availableLayers[0].id);
+      }
+    }
+  }, [segmentType, segment, availableLayers, selectedLayerId]);
 
   return (
     <Modal
@@ -197,6 +285,26 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
       title={segment ? "Edit Segment" : "Create Segment"}
     >
       <div className="space-y-4">
+        {/* Layer Selection */}
+        {availableLayers.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Layer
+            </label>
+            <select
+              value={selectedLayerId}
+              onChange={(e) => setSelectedLayerId(e.target.value)}
+              className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
+            >
+              {availableLayers.map((layer) => (
+                <option key={layer.id} value={layer.id}>
+                  {layer.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Segment Type Toggle */}
         {!segment && (
           <div>
@@ -205,7 +313,7 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
             </label>
             <div className="flex gap-2">
               <button
-                onClick={() => setSegmentType("text")}
+                onClick={() => handleSegmentTypeChange("text")}
                 className={cn(
                   "flex-1 px-4 py-2 rounded-geist border transition-colors",
                   segmentType === "text"
@@ -216,7 +324,7 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
                 📝 Text
               </button>
               <button
-                onClick={() => setSegmentType("code")}
+                onClick={() => handleSegmentTypeChange("code")}
                 className={cn(
                   "flex-1 px-4 py-2 rounded-geist border transition-colors",
                   segmentType === "code"
@@ -227,7 +335,7 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
                 💻 Code
               </button>
               <button
-                onClick={() => setSegmentType("audio")}
+                onClick={() => handleSegmentTypeChange("audio")}
                 className={cn(
                   "flex-1 px-4 py-2 rounded-geist border transition-colors",
                   segmentType === "audio"
@@ -238,7 +346,7 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
                 🔊 Audio
               </button>
               <button
-                onClick={() => setSegmentType("gif")}
+                onClick={() => handleSegmentTypeChange("gif")}
                 className={cn(
                   "flex-1 px-4 py-2 rounded-geist border transition-colors",
                   segmentType === "gif"

@@ -2,13 +2,15 @@
 
 import React, { useState, useMemo } from "react";
 import { Button } from "./Button";
-import { Segment } from "../../types/constants";
+import { Segment, Layer } from "../../types/constants";
 import { Timeline, Track } from "./Timeline";
 import { SegmentModal } from "./SegmentModal";
 
 interface SegmentEditorProps {
   segments: Segment[];
   onSegmentsChange: (segments: Segment[]) => void;
+  layers: Layer[];
+  onLayersChange: (layers: Layer[]) => void;
   currentTime?: number;
   onPlay?: () => void;
   onPause?: () => void;
@@ -19,6 +21,8 @@ interface SegmentEditorProps {
 export const SegmentEditor: React.FC<SegmentEditorProps> = ({
   segments,
   onSegmentsChange,
+  layers,
+  onLayersChange,
   currentTime = 0,
   onPlay,
   onPause,
@@ -30,29 +34,30 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
   const [editingTrackId, setEditingTrackId] = useState<string | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [selectedSegment, setSelectedSegment] = useState<{ trackId: string; index: number } | null>(null);
+  const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
+  const [isRenamingLayer, setIsRenamingLayer] = useState<string | null>(null);
+  const [layerRenameValue, setLayerRenameValue] = useState("");
 
-  // Organize segments into tracks
+  // Organize segments into tracks based on layers, grouped by type
   const tracks = useMemo((): Track[] => {
-    const videoSegments = segments.filter(
-      (seg) => seg.type === "text" || seg.type === "code" || seg.type === "gif"
-    );
-    const audioSegments = segments.filter((seg) => seg.type === "audio");
-
-    return [
-      {
-        id: "video",
-        name: "Video",
-        segments: videoSegments,
-        height: 120,
-      },
-      {
-        id: "audio",
-        name: "Audio",
-        segments: audioSegments,
-        height: 80,
-      },
-    ];
-  }, [segments]);
+    // Separate layers by type
+    const videoLayers = layers.filter(l => l.type === "video").sort((a, b) => a.order - b.order);
+    const audioLayers = layers.filter(l => l.type === "audio").sort((a, b) => a.order - b.order);
+    
+    // Combine: video layers first, then audio layers
+    const groupedLayers = [...videoLayers, ...audioLayers];
+    
+    return groupedLayers.map((layer) => {
+      const layerSegments = segments.filter((seg) => seg.layerId === layer.id);
+      return {
+        id: layer.id,
+        name: layer.name,
+        segments: layerSegments,
+        height: layer.type === "video" ? 120 : 80,
+        type: layer.type, // Add type to track for grouping visualization
+      };
+    });
+  }, [segments, layers]);
 
   const defaultStart = useMemo(() => {
     if (segments.length === 0) return 0;
@@ -64,13 +69,58 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
     setEditingSegment(null);
     setEditingTrackId(null);
     setEditingIndex(null);
+    // Default to first video layer if available, otherwise first layer
+    const defaultLayer = layers.find(l => l.type === "video") || layers[0];
+    setEditingLayerId(defaultLayer?.id || null);
     setIsModalOpen(true);
+  };
+
+  const handleAddLayer = (type: "video" | "audio") => {
+    const maxOrder = layers.length > 0 ? Math.max(...layers.map(l => l.order)) : -1;
+    const newLayer: Layer = {
+      id: `${type}-${Date.now()}`,
+      name: `${type === "video" ? "Video" : "Audio"} Layer ${layers.filter(l => l.type === type).length + 1}`,
+      type,
+      order: maxOrder + 1,
+    };
+    onLayersChange([...layers, newLayer]);
+  };
+
+  const handleDeleteLayer = (layerId: string) => {
+    if (layers.length <= 1) {
+      alert("Cannot delete the last layer");
+      return;
+    }
+    
+    // Remove segments from this layer
+    const updatedSegments = segments.filter(seg => seg.layerId !== layerId);
+    onSegmentsChange(updatedSegments);
+    
+    // Remove the layer
+    const updatedLayers = layers.filter(l => l.id !== layerId);
+    onLayersChange(updatedLayers);
+  };
+
+  const handleRenameLayer = (layerId: string, newName: string) => {
+    if (!newName.trim()) return;
+    const updatedLayers = layers.map(l => 
+      l.id === layerId ? { ...l, name: newName.trim() } : l
+    );
+    onLayersChange(updatedLayers);
+    setIsRenamingLayer(null);
+    setLayerRenameValue("");
+  };
+
+  const startRenamingLayer = (layerId: string, currentName: string) => {
+    setIsRenamingLayer(layerId);
+    setLayerRenameValue(currentName);
   };
 
   const handleEditSegment = (segment: Segment, trackId: string, index: number) => {
     setEditingSegment(segment);
     setEditingTrackId(trackId);
     setEditingIndex(index);
+    setEditingLayerId(segment.layerId);
     setSelectedSegment({ trackId, index });
     setIsModalOpen(true);
   };
@@ -84,17 +134,23 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
         const globalIndex = segments.findIndex((s) => s === segmentInArray);
         if (globalIndex !== -1) {
           const updated = [...segments];
+          // Segment already has the correct layerId from the modal
           updated[globalIndex] = segment;
           onSegmentsChange(updated);
         }
       }
     } else {
-      // Add new segment
+      // Add new segment - segment already has layerId from the modal
+      if (!segment.layerId) {
+        alert("Please select a layer");
+        return;
+      }
       onSegmentsChange([...segments, segment]);
     }
     setEditingSegment(null);
     setEditingTrackId(null);
     setEditingIndex(null);
+    setEditingLayerId(null);
   };
 
   const handleDeleteSegment = (trackId: string, index: number) => {
@@ -134,22 +190,27 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
     const updated = [...segments];
     const [moved] = updated.splice(fromGlobalIndex, 1);
 
+    // Update layerId if moving between different layers
+    const movedWithNewLayer = fromTrackId !== toTrackId 
+      ? { ...moved, layerId: toTrackId }
+      : moved;
+
     if (fromTrackId === toTrackId) {
       // Reordering within same track
       const toSegment = toTrack.segments[toIndex];
       const toGlobalIndex = segments.findIndex((s) => s === toSegment);
       if (toGlobalIndex !== -1) {
-        updated.splice(toGlobalIndex, 0, moved);
+        updated.splice(toGlobalIndex, 0, movedWithNewLayer);
       }
     } else {
       // Moving between tracks - find insertion point
       const toSegment = toTrack.segments[toIndex];
       const toGlobalIndex = segments.findIndex((s) => s === toSegment);
       if (toGlobalIndex !== -1) {
-        updated.splice(toGlobalIndex, 0, moved);
+        updated.splice(toGlobalIndex, 0, movedWithNewLayer);
       } else {
         // Append to end if track is empty
-        updated.push(moved);
+        updated.push(movedWithNewLayer);
       }
     }
 
@@ -164,25 +225,63 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
     }
   };
 
+  const handleSegmentMove = (segment: Segment, newLayerId: string, newStartTime: number) => {
+    const globalIndex = segments.findIndex((s) => s === segment);
+    if (globalIndex === -1) return;
+
+    const updated = [...segments];
+    updated[globalIndex] = {
+      ...segment,
+      layerId: newLayerId,
+      start: newStartTime,
+    };
+
+    onSegmentsChange(updated);
+
+    // Update selected segment if it was the moved one
+    const track = tracks.find((t) => t.id === newLayerId);
+    if (track) {
+      const newIndex = track.segments.findIndex((s) => s === segment);
+      if (newIndex !== -1) {
+        setSelectedSegment({ trackId: newLayerId, index: newIndex });
+      }
+    }
+  };
+
   return (
-    <div className="w-full bg-gray-900 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="w-full shadow-md bg-black p-4 flex flex-col h-full min-h-0 rounded-lg">
+      <div className="flex items-center justify-between mb-3 flex-shrink-0 gap-2">
         <h2 className="text-xl font-bold text-white">Timeline</h2>
         <Button onClick={handleAddSegment}>Add Segment</Button>
       </div>
 
-      <Timeline
-        tracks={tracks}
-        onSegmentClick={handleEditSegment}
-        onSegmentDelete={handleDeleteSegment}
-        onSegmentReorder={handleReorderSegments}
-        selectedSegment={selectedSegment}
-        currentTime={currentTime}
-        onPlay={onPlay}
-        onPause={onPause}
-        onReset={onReset}
-        onSeek={onSeek}
-      />
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <Timeline
+          tracks={tracks}
+          onSegmentClick={handleEditSegment}
+          onSegmentDelete={handleDeleteSegment}
+          onSegmentReorder={handleReorderSegments}
+          onSegmentMove={handleSegmentMove}
+          selectedSegment={selectedSegment}
+          currentTime={currentTime}
+          onPlay={onPlay}
+          onPause={onPause}
+          onReset={onReset}
+          onSeek={onSeek}
+          onLayerDelete={handleDeleteLayer}
+          onStartRenameLayer={startRenamingLayer}
+          isRenamingLayer={isRenamingLayer}
+          layerRenameValue={layerRenameValue ?? ""}
+          onLayerRenameValueChange={setLayerRenameValue}
+          onLayerRenameConfirm={handleRenameLayer}
+          onLayerRenameCancel={() => {
+            setIsRenamingLayer(null);
+            setLayerRenameValue("");
+          }}
+          onAddVideoLayer={() => handleAddLayer("video")}
+          onAddAudioLayer={() => handleAddLayer("audio")}
+        />
+      </div>
 
       <SegmentModal
         isOpen={isModalOpen}
@@ -191,10 +290,13 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
           setEditingSegment(null);
           setEditingTrackId(null);
           setEditingIndex(null);
+          setEditingLayerId(null);
         }}
         onSave={handleSaveSegment}
         segment={editingSegment}
         defaultStart={defaultStart}
+        layers={layers}
+        defaultLayerId={editingLayerId}
       />
     </div>
   );

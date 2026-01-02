@@ -11,16 +11,21 @@ import {
   VIDEO_HEIGHT,
   VIDEO_WIDTH,
   Segment,
+  Layer,
 } from "../../types/constants";
 import { RenderControls } from "../components/RenderControls";
 import { SegmentEditor } from "../components/SegmentEditor";
-import { Spacing } from "../components/Spacing";
-import { Tips } from "../components/Tips";
 import { Main } from "../remotion/Main";
 
 const Home: NextPage = () => {
   const [segments, setSegments] = useState<Segment[]>(
-    defaultMyCompProps.segments
+    defaultMyCompProps.segments || []
+  );
+  const [layers, setLayers] = useState<Layer[]>(
+    defaultMyCompProps.layers || [
+      { id: "video-1", name: "Video Layer 1", type: "video", order: 0 },
+      { id: "audio-1", name: "Audio Layer 1", type: "audio", order: 1 },
+    ]
   );
   const [currentTime, setCurrentTime] = useState(0);
   const playerRef = useRef<PlayerRef>(null);
@@ -28,8 +33,9 @@ const Home: NextPage = () => {
   const inputProps: z.infer<typeof CompositionProps> = useMemo(() => {
     return {
       segments,
+      layers,
     };
-  }, [segments]);
+  }, [segments, layers]);
 
   // Calculate total duration based on segments - find maximum end time
   const durationInFrames = useMemo(() => {
@@ -74,50 +80,60 @@ const Home: NextPage = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="max-w-screen-2xl m-auto mb-5">
-        <div className="flex flex-col mt-16">
-          {/* Preview Section */}
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4">Preview</h2>
-            <div className="overflow-hidden rounded-geist shadow-[0_0_200px_rgba(0,0,0,0.15)]">
-              <Player
-                ref={playerRef}
-                component={Main}
-                inputProps={inputProps}
-                durationInFrames={durationInFrames}
-                fps={VIDEO_FPS}
-                compositionHeight={VIDEO_HEIGHT}
-                compositionWidth={VIDEO_WIDTH}
-                style={{
-                  width: "100%",
-                }}
-                controls
-                autoPlay
-                loop
-              />
-            </div>
-          </div>
-
-          {/* Editor Section */}
-          <div>
-            <SegmentEditor
-              segments={segments}
-              onSegmentsChange={setSegments}
-              currentTime={currentTime}
-              onPlay={handlePlay}
-              onPause={handlePause}
-              onReset={handleReset}
-              onSeek={handleSeek}
-            />
-            <Spacing></Spacing>
+    <div className="h-full flex flex-col overflow-hidden">
+    
+      <div className="flex-1 flex flex-col min-h-0 p-4">
+        
+        <div className="flex-1 flex items-center justify-center min-h-0 overflow-hidden shadow-2xl p-5">
+          <div className="flex flex-col ">
+            <h2 className="text-xl font-bold mb-2 text-foreground">Preview</h2>
+            <p className="text-sm text-foreground/60">
+              Build your video with the timeline and preview it here. Using segments to add content to the video.
+            </p>
             <RenderControls
               segments={segments}
               setSegments={setSegments}
               inputProps={inputProps}
-            ></RenderControls>
+            />
           </div>
-        </div> 
+          <div className="w-full h-full flex items-center justify-center">
+                <Player
+                  ref={playerRef}
+                  component={Main}
+                  inputProps={inputProps}
+                  durationInFrames={durationInFrames}
+                  fps={VIDEO_FPS}
+                  compositionHeight={VIDEO_HEIGHT}
+                  compositionWidth={VIDEO_WIDTH}
+                  style={{
+                    width: "60%",
+                    height: "100%",
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    borderRadius: "10px",
+                  }}
+                  controls
+                  autoPlay
+                  loop
+                />
+         
+          </div>
+        </div>
+      </div>
+
+      {/* Timeline Section - Fixed height */}
+      <div className="flex-shrink-0 h-[600px] max-h-[40vh]">
+        <SegmentEditor
+          segments={segments}
+          onSegmentsChange={setSegments}
+          layers={layers}
+          onLayersChange={setLayers}
+          currentTime={currentTime}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onReset={handleReset}
+          onSeek={handleSeek}
+        />
       </div>
     </div>
   );

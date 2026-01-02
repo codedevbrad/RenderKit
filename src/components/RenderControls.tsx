@@ -13,16 +13,16 @@ export const RenderControls: React.FC<{
   segments: Segment[];
   setSegments: React.Dispatch<React.SetStateAction<Segment[]>>;
   inputProps: z.infer<typeof CompositionProps>;
-}> = ({ segments, setSegments, inputProps }) => {
+}> = ({ segments, inputProps }) => {
   const { renderMedia, state, undo } = useRendering(COMP_NAME, inputProps);
 
   return (
-    <InputContainer>
+    <div className="my-5">
       {state.status === "init" ||
       state.status === "invoking" ||
       state.status === "error" ? (
         <>
-          <AlignEnd>
+         
             <Button
               disabled={state.status === "invoking" || segments.length === 0}
               loading={state.status === "invoking"}
@@ -30,7 +30,6 @@ export const RenderControls: React.FC<{
             >
               Render video
             </Button>
-          </AlignEnd>
           {state.status === "error" ? (
             <ErrorComp message={state.error.message}></ErrorComp>
           ) : null}
@@ -47,6 +46,6 @@ export const RenderControls: React.FC<{
           </AlignEnd>
         </>
       ) : null}
-    </InputContainer>
+    </div>
   );
 };

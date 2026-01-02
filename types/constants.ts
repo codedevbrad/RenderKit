@@ -9,6 +9,7 @@ export const SegmentSchema = z.discriminatedUnion("type", [
     text: z.string(),
     fadeIn: z.number().default(0.5),
     fadeOut: z.number().default(0.5),
+    layerId: z.string(),
   }),
   z.object({
     type: z.literal("code"),
@@ -18,6 +19,7 @@ export const SegmentSchema = z.discriminatedUnion("type", [
     language: z.string(),
     fadeIn: z.number().default(0.5),
     fadeOut: z.number().default(0.5),
+    layerId: z.string(),
   }),
   z.object({
     type: z.literal("audio"),
@@ -28,6 +30,7 @@ export const SegmentSchema = z.discriminatedUnion("type", [
     volume: z.number().default(1),
     fadeIn: z.number().default(0.5),
     fadeOut: z.number().default(0.5),
+    layerId: z.string(),
   }),
   z.object({
     type: z.literal("gif"),
@@ -37,16 +40,31 @@ export const SegmentSchema = z.discriminatedUnion("type", [
     name: z.string().optional(),
     fadeIn: z.number().default(0.5),
     fadeOut: z.number().default(0.5),
+    layerId: z.string(),
   }),
 ]);
 
 export type Segment = z.infer<typeof SegmentSchema>;
 
+export const LayerSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(["video", "audio"]),
+  order: z.number(),
+});
+
+export type Layer = z.infer<typeof LayerSchema>;
+
 export const CompositionProps = z.object({
   segments: z.array(SegmentSchema),
+  layers: z.array(LayerSchema).optional(),
 });
 
 export const defaultMyCompProps: z.infer<typeof CompositionProps> = {
+  layers: [
+    { id: "video-1", name: "Video Layer 1", type: "video", order: 0 },
+    { id: "audio-1", name: "Audio Layer 1", type: "audio", order: 1 },
+  ],
   segments: [
     {
       type: "text",
@@ -55,6 +73,7 @@ export const defaultMyCompProps: z.infer<typeof CompositionProps> = {
       text: "React in 60 seconds.",
       fadeIn: 0.3,
       fadeOut: 0.3,
+      layerId: "video-1",
     },
     {
       type: "text",
@@ -63,6 +82,7 @@ export const defaultMyCompProps: z.infer<typeof CompositionProps> = {
       text: "React is a JavaScript library for building user interfaces.",
       fadeIn: 0.3,
       fadeOut: 0.3,
+      layerId: "video-1",
     },
     {
       type: "text",
@@ -71,6 +91,7 @@ export const defaultMyCompProps: z.infer<typeof CompositionProps> = {
       text: "Your UI is a function of state.",
       fadeIn: 0.3,
       fadeOut: 0.3,
+      layerId: "video-1",
     },
 
     {
@@ -83,6 +104,7 @@ export const defaultMyCompProps: z.infer<typeof CompositionProps> = {
       language: "javascript",
       fadeIn: 0.4,
       fadeOut: 0.4,
+      layerId: "video-1",
     },
 
     {
@@ -92,6 +114,7 @@ export const defaultMyCompProps: z.infer<typeof CompositionProps> = {
       text: "Components are just functions.",
       fadeIn: 0.3,
       fadeOut: 0.3,
+      layerId: "video-1",
     },
 
     {
@@ -104,6 +127,7 @@ export const defaultMyCompProps: z.infer<typeof CompositionProps> = {
       language: "javascript",
       fadeIn: 0.4,
       fadeOut: 0.4,
+      layerId: "video-1",
     },
 
     {
@@ -113,6 +137,7 @@ export const defaultMyCompProps: z.infer<typeof CompositionProps> = {
       text: "State makes things interactive.",
       fadeIn: 0.3,
       fadeOut: 0.3,
+      layerId: "video-1",
     },
 
     {
@@ -133,6 +158,7 @@ function Counter() {
       language: "javascript",
       fadeIn: 0.4,
       fadeOut: 0.4,
+      layerId: "video-1",
     },
 
     {
@@ -142,6 +168,7 @@ function Counter() {
       text: "When state changes… React re-renders.",
       fadeIn: 0.3,
       fadeOut: 0.3,
+      layerId: "video-1",
     },
 
     {
@@ -151,6 +178,7 @@ function Counter() {
       text: "You never touch the DOM directly.",
       fadeIn: 0.3,
       fadeOut: 0.3,
+      layerId: "video-1",
     },
 
     {
@@ -164,6 +192,7 @@ document.querySelector("button");
       language: "javascript",
       fadeIn: 0.4,
       fadeOut: 0.4,
+      layerId: "video-1",
     },
 
     {
@@ -173,6 +202,7 @@ document.querySelector("button");
       text: "Hooks power everything.",
       fadeIn: 0.3,
       fadeOut: 0.3,
+      layerId: "video-1",
     },
 
     {
@@ -186,15 +216,17 @@ useCallback()`,
       language: "javascript",
       fadeIn: 0.4,
       fadeOut: 0.4,
+      layerId: "video-1",
     },
 
     {
       type: "text",
       start: 65,
       duration: 3,
-      text: "That’s React. Declarative. Composable. Fast.",
+      text: "That's React. Declarative. Composable. Fast.",
       fadeIn: 0.3,
       fadeOut: 0.3,
+      layerId: "video-1",
     },
   ],
 };
