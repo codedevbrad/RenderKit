@@ -252,7 +252,10 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
     <div className="w-full shadow-md bg-black p-4 flex flex-col h-full min-h-0 rounded-lg">
       <div className="flex items-center justify-between mb-3 flex-shrink-0 gap-2">
         <h2 className="text-xl font-bold text-white">Timeline</h2>
-        <Button onClick={handleAddSegment}>Add Segment</Button>
+        
+        <div className="flex items-center gap-2 text-white">
+            icons
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden">
