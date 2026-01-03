@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Button } from "./Button";
 import { Segment, Layer } from "../../types/constants";
-import { Timeline, Track } from "./Timeline";
+import { Timeline, Track } from "../components/Timeline";
 import { SegmentModal } from "./SegmentModal";
+import { Button } from "../components/Button";
 
 interface SegmentEditorProps {
   segments: Segment[];
@@ -252,6 +252,8 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
     <div className="w-full shadow-md bg-black p-4 flex flex-col h-full min-h-0 rounded-lg">
       <div className="flex items-center justify-between mb-3 flex-shrink-0 gap-2">
         <h2 className="text-xl font-bold text-white">Timeline</h2>
+
+        <Button onClick={handleAddSegment}>Add Segment</Button>
         
         <div className="flex items-center gap-2 text-white">
             icons

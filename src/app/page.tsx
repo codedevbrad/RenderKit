@@ -13,8 +13,8 @@ import {
   Segment,
   Layer,
 } from "../../types/constants";
-import { RenderControls } from "../components/RenderControls";
-import { SegmentEditor } from "../components/SegmentEditor";
+import { RenderControls } from "../editor/RenderControls";
+import { SegmentEditor } from "../editor/SegmentEditor";
 import { Main } from "../remotion/Main";
 
 const Home: NextPage = () => {

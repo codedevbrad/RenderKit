@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Button } from "./Button";
-import { Modal } from "./Modal";
-import { Spacing } from "./Spacing";
+import { Button } from "../components/Button";
+import { Modal } from "../components/Modal";
+import { Spacing } from "../components/Spacing";
 import { Segment, Layer } from "../../types/constants";
 import { cn } from "../lib/utils";
-import { GiphyPicker } from "./GiphyPicker";
+import { GiphyPicker } from "../components/GiphyPicker";
 
 interface SegmentModalProps {
   isOpen: boolean;
