@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { Segment, Layer } from "../../types/constants";
 import { Timeline, Track } from "./Timeline";
 import { SegmentModal } from "./SegmentModal";
-import { Button } from "../components/Button";
+import { SegmentList } from "./SegmentList"; 
 
 interface SegmentEditorProps {
   segments: Segment[];
@@ -365,34 +365,49 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <Timeline
-          tracks={tracks}
-          onSegmentClick={handleEditSegment}
-          onSegmentDelete={handleDeleteSegment}
-          onSegmentReorder={handleReorderSegments}
-          onSegmentMove={handleSegmentMove}
-          onSegmentCreate={handleSegmentCreate}
-          selectedSegment={selectedSegment}
-          currentTime={currentTime}
-          onPlay={onPlay}
-          onPause={onPause}
-          onReset={onReset}
-          onSeek={onSeek}
-          onLayerDelete={handleDeleteLayer}
-          onStartRenameLayer={startRenamingLayer}
-          isRenamingLayer={isRenamingLayer}
-          layerRenameValue={layerRenameValue ?? ""}
-          onLayerRenameValueChange={setLayerRenameValue}
-          onLayerRenameConfirm={handleRenameLayer}
-          onLayerRenameCancel={() => {
-            setIsRenamingLayer(null);
-            setLayerRenameValue("");
-          }}
-          onAddVideoLayer={() => handleAddLayer("video")}
-          onAddAudioLayer={() => handleAddLayer("audio")}
-          draggingFromPalette={draggingFromPalette}
-        />
+      <div className="flex-1 min-h-0 overflow-hidden flex gap-4">
+        {/* Segment List - Left Side */}
+        <div className="flex-shrink-0 w-64 bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0a0a0a] rounded-lg border border-unfocused-border-color/50 overflow-hidden flex flex-col">
+          <div className="px-4 py-3 border-b border-unfocused-border-color/30 bg-gradient-to-b from-[#151515] to-[#0f0f0f]">
+            <h3 className="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
+              Segments
+            </h3>
+          </div>
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <SegmentList tracks={tracks} />
+          </div>
+        </div>
+
+        {/* Timeline - Right Side */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <Timeline
+            tracks={tracks}
+            onSegmentClick={handleEditSegment}
+            onSegmentDelete={handleDeleteSegment}
+            onSegmentReorder={handleReorderSegments}
+            onSegmentMove={handleSegmentMove}
+            onSegmentCreate={handleSegmentCreate}
+            selectedSegment={selectedSegment}
+            currentTime={currentTime}
+            onPlay={onPlay}
+            onPause={onPause}
+            onReset={onReset}
+            onSeek={onSeek}
+            onLayerDelete={handleDeleteLayer}
+            onStartRenameLayer={startRenamingLayer}
+            isRenamingLayer={isRenamingLayer}
+            layerRenameValue={layerRenameValue ?? ""}
+            onLayerRenameValueChange={setLayerRenameValue}
+            onLayerRenameConfirm={handleRenameLayer}
+            onLayerRenameCancel={() => {
+              setIsRenamingLayer(null);
+              setLayerRenameValue("");
+            }}
+            onAddVideoLayer={() => handleAddLayer("video")}
+            onAddAudioLayer={() => handleAddLayer("audio")}
+            draggingFromPalette={draggingFromPalette}
+          />
+        </div>
       </div>
 
       <SegmentModal
