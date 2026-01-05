@@ -43,6 +43,7 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
   const [gifUrl, setGifUrl] = useState("");
   const [gifName, setGifName] = useState("");
   const [selectedLayerId, setSelectedLayerId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"settings" | "content">("settings");
 
   useEffect(() => {
     if (segment) {
@@ -278,6 +279,13 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
     }
   }, [segmentType, segment, availableLayers, selectedLayerId]);
 
+  // Reset to settings tab when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab("settings");
+    }
+  }, [isOpen]);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -285,305 +293,340 @@ export const SegmentModal: React.FC<SegmentModalProps> = ({
       title={segment ? "Edit Segment" : "Create Segment"}
     >
       <div className="space-y-4">
-        {/* Layer Selection */}
-        {availableLayers.length > 0 && (
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Layer
-            </label>
-            <select
-              value={selectedLayerId}
-              onChange={(e) => setSelectedLayerId(e.target.value)}
-              className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
-            >
-              {availableLayers.map((layer) => (
-                <option key={layer.id} value={layer.id}>
-                  {layer.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Segment Type Toggle */}
-        {!segment && (
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Segment Type
-            </label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleSegmentTypeChange("text")}
-                className={cn(
-                  "flex-1 px-4 py-2 rounded-geist border transition-colors",
-                  segmentType === "text"
-                    ? "bg-foreground text-background border-foreground"
-                    : "bg-background text-foreground border-unfocused-border-color hover:border-focused-border-color"
-                )}
-              >
-                📝 Text
-              </button>
-              <button
-                onClick={() => handleSegmentTypeChange("code")}
-                className={cn(
-                  "flex-1 px-4 py-2 rounded-geist border transition-colors",
-                  segmentType === "code"
-                    ? "bg-foreground text-background border-foreground"
-                    : "bg-background text-foreground border-unfocused-border-color hover:border-focused-border-color"
-                )}
-              >
-                💻 Code
-              </button>
-              <button
-                onClick={() => handleSegmentTypeChange("audio")}
-                className={cn(
-                  "flex-1 px-4 py-2 rounded-geist border transition-colors",
-                  segmentType === "audio"
-                    ? "bg-foreground text-background border-foreground"
-                    : "bg-background text-foreground border-unfocused-border-color hover:border-focused-border-color"
-                )}
-              >
-                🔊 Audio
-              </button>
-              <button
-                onClick={() => handleSegmentTypeChange("gif")}
-                className={cn(
-                  "flex-1 px-4 py-2 rounded-geist border transition-colors",
-                  segmentType === "gif"
-                    ? "bg-foreground text-background border-foreground"
-                    : "bg-background text-foreground border-unfocused-border-color hover:border-focused-border-color"
-                )}
-              >
-                🎬 GIF
-              </button>
-            </div>
-          </div>
-        )}
-        {segment && (
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Segment Type
-            </label>
-            <div className="px-4 py-2 rounded-geist border border-unfocused-border-color bg-background text-foreground">
-              {segmentType === "text" && "📝 Text"}
-              {segmentType === "code" && "💻 Code"}
-              {segmentType === "audio" && "🔊 Audio"}
-              {segmentType === "gif" && "🎬 GIF"}
-            </div>
-          </div>
-        )}
-
-        {/* Timing Controls */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Start (seconds)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              value={start}
-              onChange={(e) => setStart(parseFloat(e.target.value) || 0)}
-              className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Duration (seconds)
-              {segmentType === "audio" && isLoadingDuration && (
-                <span className="ml-2 text-xs text-disabled-text-color">
-                  (Auto-detecting...)
-                </span>
-              )}
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              value={duration}
-              onChange={(e) => setDuration(parseFloat(e.target.value) || 0)}
-              disabled={segmentType === "audio" && isLoadingDuration}
-              className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-          </div>
+        {/* Tab Navigation */}
+        <div className="flex gap-2 border-b border-unfocused-border-color">
+          <button
+            onClick={() => setActiveTab("settings")}
+            className={cn(
+              "px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
+              activeTab === "settings"
+                ? "text-foreground border-foreground"
+                : "text-disabled-text-color border-transparent hover:text-foreground"
+            )}
+          >
+            Settings
+          </button>
+          <button
+            onClick={() => setActiveTab("content")}
+            className={cn(
+              "px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
+              activeTab === "content"
+                ? "text-foreground border-foreground"
+                : "text-disabled-text-color border-transparent hover:text-foreground"
+            )}
+          >
+            Content
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Fade In (seconds)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              value={fadeIn}
-              onChange={(e) => setFadeIn(parseFloat(e.target.value) || 0)}
-              className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Fade Out (seconds)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              value={fadeOut}
-              onChange={(e) => setFadeOut(parseFloat(e.target.value) || 0)}
-              className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Content based on type */}
-        {segmentType === "text" ? (
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Text
-            </label>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={4}
-              className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none resize-none"
-              placeholder="Enter your text here..."
-            />
-          </div>
-        ) : segmentType === "code" ? (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Language
-              </label>
-              <input
-                type="text"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
-                placeholder="javascript, python, etc."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Code
-              </label>
-              <textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                rows={10}
-                className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none font-mono resize-none"
-                placeholder="// Your code here"
-              />
-            </div>
-          </>
-        ) : segmentType === "gif" ? (
-          <>
-            <GiphyPicker 
-              onSelect={handleGifSelect} 
-              selectedUrl={gifUrl}
-              defaultCollapsed={!!segment}
-            />
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Name
-              </label>
-              <input
-                type="text"
-                value={gifName}
-                onChange={(e) => setGifName(e.target.value)}
-                className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
-                placeholder="Enter a name for this GIF segment"
-              />
-            </div>
-            {gifUrl && (
+        {/* Settings Tab */}
+        {activeTab === "settings" && (
+          <div className="space-y-4">
+            {/* Layer Selection */}
+            {availableLayers.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Or enter custom URL
+                  Layer
                 </label>
-                <input
-                  type="text"
-                  value={gifUrl}
-                  onChange={(e) => setGifUrl(e.target.value)}
+                <select
+                  value={selectedLayerId}
+                  onChange={(e) => setSelectedLayerId(e.target.value)}
                   className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
-                  placeholder="https://example.com/image.gif"
-                />
+                >
+                  {availableLayers.map((layer) => (
+                    <option key={layer.id} value={layer.id}>
+                      {layer.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
-          </>
-        ) : (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Audio File
-              </label>
-              <input
-                type="file"
-                accept="audio/*"
-                onChange={handleAudioFileChange}
-                className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none file:mr-4 file:py-2 file:px-4 file:rounded-geist file:border-0 file:text-sm file:font-semibold file:bg-foreground file:text-background hover:file:bg-background hover:file:text-foreground"
-              />
-              {audioFileName && (
-                <div className="mt-2 text-sm text-disabled-text-color">
-                  Selected: {audioFileName}
-                  {isLoadingDuration && " (Loading duration...)"}
+
+            {/* Segment Type Toggle */}
+            {!segment && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Segment Type
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleSegmentTypeChange("text")}
+                    className={cn(
+                      "flex-1 px-4 py-2 rounded-geist border transition-colors",
+                      segmentType === "text"
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-background text-foreground border-unfocused-border-color hover:border-focused-border-color"
+                    )}
+                  >
+                    📝 Text
+                  </button>
+                  <button
+                    onClick={() => handleSegmentTypeChange("code")}
+                    className={cn(
+                      "flex-1 px-4 py-2 rounded-geist border transition-colors",
+                      segmentType === "code"
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-background text-foreground border-unfocused-border-color hover:border-focused-border-color"
+                    )}
+                  >
+                    💻 Code
+                  </button>
+                  <button
+                    onClick={() => handleSegmentTypeChange("audio")}
+                    className={cn(
+                      "flex-1 px-4 py-2 rounded-geist border transition-colors",
+                      segmentType === "audio"
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-background text-foreground border-unfocused-border-color hover:border-focused-border-color"
+                    )}
+                  >
+                    🔊 Audio
+                  </button>
+                  <button
+                    onClick={() => handleSegmentTypeChange("gif")}
+                    className={cn(
+                      "flex-1 px-4 py-2 rounded-geist border transition-colors",
+                      segmentType === "gif"
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-background text-foreground border-unfocused-border-color hover:border-focused-border-color"
+                    )}
+                  >
+                    🎬 GIF
+                  </button>
                 </div>
-              )}
-              {audioUrl && !audioFileName && (
-                <div className="mt-2">
+              </div>
+            )}
+            {segment && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Segment Type
+                </label>
+                <div className="px-4 py-2 rounded-geist border border-unfocused-border-color bg-background text-foreground">
+                  {segmentType === "text" && "📝 Text"}
+                  {segmentType === "code" && "💻 Code"}
+                  {segmentType === "audio" && "🔊 Audio"}
+                  {segmentType === "gif" && "🎬 GIF"}
+                </div>
+              </div>
+            )}
+
+            {/* Timing Controls */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Start (seconds)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={start}
+                  onChange={(e) => setStart(parseFloat(e.target.value) || 0)}
+                  className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Duration (seconds)
+                  {segmentType === "audio" && isLoadingDuration && (
+                    <span className="ml-2 text-xs text-disabled-text-color">
+                      (Auto-detecting...)
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={duration}
+                  onChange={(e) => setDuration(parseFloat(e.target.value) || 0)}
+                  disabled={segmentType === "audio" && isLoadingDuration}
+                  className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Fade In (seconds)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={fadeIn}
+                  onChange={(e) => setFadeIn(parseFloat(e.target.value) || 0)}
+                  className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Fade Out (seconds)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={fadeOut}
+                  onChange={(e) => setFadeOut(parseFloat(e.target.value) || 0)}
+                  className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content Tab */}
+        {activeTab === "content" && (
+          <div className="space-y-4">
+            {segmentType === "text" ? (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Text
+                </label>
+                <textarea
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  rows={8}
+                  className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none resize-none"
+                  placeholder="Enter your text here..."
+                />
+              </div>
+            ) : segmentType === "code" ? (
+              <>
+                <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
-                    Or enter URL
+                    Language
                   </label>
                   <input
                     type="text"
-                    value={audioUrl}
-                    onChange={(e) => setAudioUrl(e.target.value)}
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
                     className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
-                    placeholder="https://example.com/audio.mp3"
+                    placeholder="javascript, python, etc."
                   />
                 </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Name
-              </label>
-              <input
-                type="text"
-                value={audioName}
-                onChange={(e) => setAudioName(e.target.value)}
-                className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
-                placeholder="Enter a name for this audio segment"
-              />
-            </div>
-            {audioUrl && (
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Preview Audio
-                </label>
-                <audio
-                  controls
-                  src={audioUrl}
-                  className="w-full"
-                  style={{ maxHeight: "60px" }}
-                >
-                  Your browser does not support the audio element.
-                </audio>
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Code
+                  </label>
+                  <textarea
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    rows={12}
+                    className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none font-mono resize-none"
+                    placeholder="// Your code here"
+                  />
+                </div>
+              </>
+            ) : segmentType === "gif" ? (
+              <>
+                <GiphyPicker 
+                  onSelect={handleGifSelect} 
+                  selectedUrl={gifUrl}
+                  defaultCollapsed={!!segment}
+                />
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={gifName}
+                    onChange={(e) => setGifName(e.target.value)}
+                    className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
+                    placeholder="Enter a name for this GIF segment"
+                  />
+                </div>
+                {gifUrl && (
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Or enter custom URL
+                    </label>
+                    <input
+                      type="text"
+                      value={gifUrl}
+                      onChange={(e) => setGifUrl(e.target.value)}
+                      className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
+                      placeholder="https://example.com/image.gif"
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Audio File
+                  </label>
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleAudioFileChange}
+                    className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none file:mr-4 file:py-2 file:px-4 file:rounded-geist file:border-0 file:text-sm file:font-semibold file:bg-foreground file:text-background hover:file:bg-background hover:file:text-foreground"
+                  />
+                  {audioFileName && (
+                    <div className="mt-2 text-sm text-disabled-text-color">
+                      Selected: {audioFileName}
+                      {isLoadingDuration && " (Loading duration...)"}
+                    </div>
+                  )}
+                  {audioUrl && !audioFileName && (
+                    <div className="mt-2">
+                      <label className="block text-sm font-medium text-foreground mb-1">
+                        Or enter URL
+                      </label>
+                      <input
+                        type="text"
+                        value={audioUrl}
+                        onChange={(e) => setAudioUrl(e.target.value)}
+                        className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
+                        placeholder="https://example.com/audio.mp3"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={audioName}
+                    onChange={(e) => setAudioName(e.target.value)}
+                    className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
+                    placeholder="Enter a name for this audio segment"
+                  />
+                </div>
+                {audioUrl && (
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Preview Audio
+                    </label>
+                    <audio
+                      controls
+                      src={audioUrl}
+                      className="w-full"
+                      style={{ maxHeight: "60px" }}
+                    >
+                      Your browser does not support the audio element.
+                    </audio>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Volume (0-1)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={volume}
+                    onChange={(e) => setVolume(parseFloat(e.target.value) || 0)}
+                    className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
+                  />
+                </div>
+              </>
             )}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Volume (0-1)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="1"
-                step="0.1"
-                value={volume}
-                onChange={(e) => setVolume(parseFloat(e.target.value) || 0)}
-                className="w-full rounded-geist bg-background p-2 text-foreground text-sm border border-unfocused-border-color focus:border-focused-border-color outline-none"
-              />
-            </div>
-          </>
+          </div>
         )}
 
         <Spacing></Spacing>

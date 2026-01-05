@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { Segment, Layer } from "../../types/constants";
-import { Timeline, Track } from "../components/Timeline";
+import { Timeline, Track } from "./Timeline";
 import { SegmentModal } from "./SegmentModal";
 import { Button } from "../components/Button";
 

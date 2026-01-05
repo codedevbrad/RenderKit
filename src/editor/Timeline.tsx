@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useRef } from "react";
 import { Segment } from "../../types/constants";
 import { cn } from "../lib/utils";
-import { Button } from "./Button";
+import { Button } from "../components/Button";
 
 export interface Track {
   id: string;
