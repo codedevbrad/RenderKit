@@ -302,7 +302,9 @@ export const Timeline: React.FC<TimelineProps> = ({
 
     const handleDragOver = (e: DragEvent) => {
       e.preventDefault();
-      e.dataTransfer.dropEffect = "copy";
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = "copy";
+      }
       updatePaletteDragPreview(e);
     };
 
@@ -409,62 +411,78 @@ export const Timeline: React.FC<TimelineProps> = ({
         {/* Time Ruler */}
       <div 
         className={cn(
-          "sticky top-0 z-50 h-14 border-b border-unfocused-border-color/30 select-none bg-gradient-to-b from-[#151515] to-[#0f0f0f] backdrop-blur-sm",
+          "sticky top-0 z-50 h-14 border-b border-unfocused-border-color/30 select-none bg-gradient-to-b from-[#151515] to-[#0f0f0f] backdrop-blur-sm flex",
           onSeek && "cursor-pointer hover:bg-gradient-to-b hover:from-[#1a1a1a] hover:to-[#151515] transition-colors duration-200"
         )}
         style={{ width: `${timelineWidth}px`, minWidth: "100%", userSelect: "none" }}
-        onClick={handleTimelineClick}
       >
-        {/* Playhead on ruler */}
-        {currentTime >= 0 && currentTime <= totalDuration && (
-          <div
-            className={cn(
-              "absolute top-0 bottom-0 w-[2px] z-20 transition-all duration-100",
-              onSeek && "cursor-grab active:cursor-grabbing"
-            )}
-            style={{
-              left: `${playheadPosition}px`,
-            }}
-            onMouseDown={handlePlayheadMouseDown}
-          >
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-blue-500 blur-sm opacity-60" />
-            {/* Main line */}
-            <div className="absolute inset-0 bg-gradient-to-b from-blue-400 via-blue-500 to-blue-600 shadow-lg shadow-blue-500/50" />
-            {/* Playhead handle */}
-            <div 
-              className={cn(
-                "absolute -top-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-transparent border-t-blue-500 drop-shadow-lg transition-transform duration-100",
-                onSeek && "cursor-grab active:cursor-grabbing hover:scale-110 active:scale-95"
-              )}
-              onMouseDown={handlePlayheadMouseDown}
-            />
-          </div>
-        )}
-        <div className="absolute inset-0 flex select-none">
-          {timeMarkers.map((time) => (
+        {/* Time Ruler Legend - matches track legend width */}
+        <div 
+          className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#1a1a1a] via-[#1f1f1f] to-[#1a1a1a] border-r border-unfocused-border-color/50 flex items-center justify-center px-2 z-10 shadow-lg backdrop-blur-sm"
+          style={{ width: "120px" }}
+        >
+          <span className="text-xs text-foreground/60 font-semibold tracking-wide uppercase">
+            Time
+          </span>
+        </div>
+        
+        {/* Time Ruler Content - offset by legend width */}
+        <div 
+          className="relative ml-[120px] flex-1 h-full"
+          style={{ width: `calc(100% - 120px)` }}
+          onClick={handleTimelineClick}
+        >
+          {/* Playhead on ruler */}
+          {currentTime >= 0 && currentTime <= totalDuration && (
             <div
-              key={time}
-              className="relative border-l border-unfocused-border-color/40 select-none group"
-              style={{ width: `${pixelsPerSecond}px`, flexShrink: 0, userSelect: "none" }}
-            >
-              <div 
-                className="absolute top-2 left-1.5 px-1.5 py-0.5 text-xs font-medium text-disabled-text-color/80 select-none rounded bg-black/20 backdrop-blur-sm transition-all duration-200 group-hover:text-foreground/90 group-hover:bg-black/40"
-                style={{ userSelect: "none" }}
-              >
-                {formatTime(time)}
-              </div>
-              <div className="absolute bottom-0 left-0 w-px h-3 bg-gradient-to-b from-unfocused-border-color/60 to-transparent" />
-              {/* Minor tick marks */}
-              {time < totalDuration && (
-                <>
-                  <div className="absolute bottom-0 left-1/4 w-px h-1.5 bg-unfocused-border-color/20" />
-                  <div className="absolute bottom-0 left-1/2 w-px h-2 bg-unfocused-border-color/30" />
-                  <div className="absolute bottom-0 left-3/4 w-px h-1.5 bg-unfocused-border-color/20" />
-                </>
+              className={cn(
+                "absolute top-0 bottom-0 w-[2px] z-20 transition-all duration-100",
+                onSeek && "cursor-grab active:cursor-grabbing"
               )}
+              style={{
+                left: `${playheadPosition}px`,
+              }}
+              onMouseDown={handlePlayheadMouseDown}
+            >
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-blue-500 blur-sm opacity-60" />
+              {/* Main line */}
+              <div className="absolute inset-0 bg-gradient-to-b from-blue-400 via-blue-500 to-blue-600 shadow-lg shadow-blue-500/50" />
+              {/* Playhead handle */}
+              <div 
+                className={cn(
+                  "absolute -top-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-transparent border-t-blue-500 drop-shadow-lg transition-transform duration-100",
+                  onSeek && "cursor-grab active:cursor-grabbing hover:scale-110 active:scale-95"
+                )}
+                onMouseDown={handlePlayheadMouseDown}
+              />
             </div>
-          ))}
+          )}
+          <div className="absolute inset-0 flex select-none">
+            {timeMarkers.map((time) => (
+              <div
+                key={time}
+                className="relative border-l border-unfocused-border-color/40 select-none group"
+                style={{ width: `${pixelsPerSecond}px`, flexShrink: 0, userSelect: "none" }}
+              >
+                <div 
+                  className="absolute top-2 left-1.5 px-1.5 py-0.5 text-xs font-medium text-disabled-text-color/80 select-none rounded bg-black/20 backdrop-blur-sm transition-all duration-200 group-hover:text-foreground/90 group-hover:bg-black/40"
+                  style={{ userSelect: "none" }}
+                >
+                  {formatTime(time)}
+                </div>
+                <div className="absolute bottom-0 left-0 w-px h-3 bg-gradient-to-b from-unfocused-border-color/60 to-transparent" />
+                {/* Minor tick marks */}
+                {time < totalDuration && (
+                  <>
+                    <div className="absolute bottom-0 left-1/4 w-px h-1.5 bg-unfocused-border-color/20" />
+                    <div className="absolute bottom-0 left-1/2 w-px h-2 bg-unfocused-border-color/30" />
+                    <div className="absolute bottom-0 left-3/4 w-px h-1.5 bg-unfocused-border-color/20" />
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
