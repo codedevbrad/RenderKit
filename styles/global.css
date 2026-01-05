@@ -13,7 +13,7 @@
   --geist-quarter-pad: 6px;
   --geist-half-pad: 12px;
   --geist-pad: 24px;
-  --geist-font: "Inter";
+  --geist-font: var(--font-inter, "Inter", system-ui, -apple-system, sans-serif);
 
   --geist-error: #e00;
 
@@ -49,6 +49,7 @@
   --spacing-geist-quarter: var(--geist-quarter-pad);
   --radius-geist: var(--geist-border-radius);
   --font-geist: var(--geist-font);
+  --font-family-sans: var(--geist-font);
   --animate-spinner: spinner 1.2s linear infinite;
 
   @keyframes spinner {
@@ -104,4 +105,33 @@
 .timeline-scrollbar::-webkit-scrollbar-corner {
   background: rgba(15, 15, 15, 0.8);
   border-radius: 8px;
+}
+
+/* Typography improvements */
+body {
+  font-family: var(--font-inter, "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1;
+  font-kerning: normal;
+}
+
+/* Better text rendering for headings */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* Improved readability for body text */
+p, span, div {
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+}
+
+/* Better button text */
+button {
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }

@@ -37,6 +37,7 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
   const [isRenamingLayer, setIsRenamingLayer] = useState<string | null>(null);
   const [layerRenameValue, setLayerRenameValue] = useState("");
+  const [draggingFromPalette, setDraggingFromPalette] = useState<{ type: "text" | "code" | "audio" | "gif"; duration: number } | null>(null);
 
   // Organize segments into tracks based on layers, grouped by type
   const tracks = useMemo((): Track[] => {
@@ -248,15 +249,119 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
     }
   };
 
+  const handleSegmentCreate = (type: "text" | "code" | "audio" | "gif", layerId: string, startTime: number, duration: number) => {
+    // Find appropriate layer if the provided one doesn't match the segment type
+    const targetLayer = layers.find(l => l.id === layerId) || 
+      (type === "audio" 
+        ? layers.find(l => l.type === "audio") 
+        : layers.find(l => l.type === "video")) ||
+      layers[0];
+    
+    if (!targetLayer) return;
+
+    // Create default segment based on type
+    const newSegment: Segment = 
+      type === "text"
+        ? {
+            type: "text",
+            start: startTime,
+            duration,
+            text: "New text segment",
+            fadeIn: 0.5,
+            fadeOut: 0.5,
+            layerId: targetLayer.id,
+          }
+        : type === "code"
+        ? {
+            type: "code",
+            start: startTime,
+            duration,
+            code: "// Your code here",
+            language: "javascript",
+            fadeIn: 0.5,
+            fadeOut: 0.5,
+            layerId: targetLayer.id,
+          }
+        : type === "audio"
+        ? {
+            type: "audio",
+            start: startTime,
+            duration,
+            audioUrl: "",
+            volume: 1,
+            fadeIn: 0.5,
+            fadeOut: 0.5,
+            layerId: targetLayer.id,
+          }
+        : {
+            type: "gif",
+            start: startTime,
+            duration,
+            gifUrl: "",
+            fadeIn: 0.5,
+            fadeOut: 0.5,
+            layerId: targetLayer.id,
+          };
+    
+    onSegmentsChange([...segments, newSegment]);
+    setDraggingFromPalette(null);
+  };
+
   return (
     <div className="w-full shadow-md bg-black p-4 flex flex-col h-full min-h-0 rounded-lg">
       <div className="flex items-center justify-between mb-3 flex-shrink-0 gap-2">
         <h2 className="text-xl font-bold text-white">Timeline</h2>
-
-        <Button onClick={handleAddSegment}>Add Segment</Button>
         
-        <div className="flex items-center gap-2 text-white">
-            icons
+        <div className="flex items-center gap-2">
+          {/* Draggable Segment Type Icons */}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/40 rounded-lg border border-unfocused-border-color/50">
+            <span className="text-xs text-foreground/60 mr-1">Drag to add:</span>
+            {(["text", "code", "audio", "gif"] as const).map((type) => {
+              const getIcon = () => {
+                if (type === "text") return "📝";
+                if (type === "code") return "💻";
+                if (type === "audio") return "🔊";
+                if (type === "gif") return "🎬";
+                return "📄";
+              };
+              
+              const getLabel = () => {
+                if (type === "text") return "Text";
+                if (type === "code") return "Code";
+                if (type === "audio") return "Audio";
+                if (type === "gif") return "GIF";
+                return "Segment";
+              };
+
+              const defaultDuration = type === "audio" ? 5 : 3;
+
+              return (
+                <div
+                  key={type}
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggingFromPalette({ type, duration: defaultDuration });
+                    e.dataTransfer.effectAllowed = "copy";
+                    e.dataTransfer.setData("segment-type", type);
+                    document.body.style.userSelect = "none";
+                  }}
+                  onDragEnd={() => {
+                    // Only clear if we didn't successfully drop (check if drop was prevented)
+                    // The drop handler will clear the state, but if drag ends without drop, clear it here
+                    setTimeout(() => {
+                      setDraggingFromPalette(null);
+                      document.body.style.userSelect = "";
+                    }, 100);
+                  }}
+                  className="flex flex-col items-center gap-1 px-2 py-1.5 rounded cursor-grab active:cursor-grabbing hover:bg-foreground/10 transition-colors group"
+                  title={`Drag ${getLabel()} segment to timeline`}
+                >
+                  <span className="text-2xl drop-shadow-lg">{getIcon()}</span>
+                  <span className="text-xs text-foreground/70 group-hover:text-foreground transition-colors">{getLabel()}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -267,6 +372,7 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
           onSegmentDelete={handleDeleteSegment}
           onSegmentReorder={handleReorderSegments}
           onSegmentMove={handleSegmentMove}
+          onSegmentCreate={handleSegmentCreate}
           selectedSegment={selectedSegment}
           currentTime={currentTime}
           onPlay={onPlay}
@@ -285,6 +391,7 @@ export const SegmentEditor: React.FC<SegmentEditorProps> = ({
           }}
           onAddVideoLayer={() => handleAddLayer("video")}
           onAddAudioLayer={() => handleAddLayer("audio")}
+          draggingFromPalette={draggingFromPalette}
         />
       </div>
 

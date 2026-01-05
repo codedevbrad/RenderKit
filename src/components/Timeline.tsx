@@ -19,6 +19,7 @@ interface TimelineProps {
   onSegmentDelete: (trackId: string, index: number) => void;
   onSegmentReorder?: (fromTrackId: string, fromIndex: number, toTrackId: string, toIndex: number) => void;
   onSegmentMove?: (segment: Segment, newLayerId: string, newStartTime: number) => void;
+  onSegmentCreate?: (type: "text" | "code" | "audio" | "gif", layerId: string, startTime: number, duration: number) => void;
   selectedSegment: { trackId: string; index: number } | null;
   pixelsPerSecond?: number;
   currentTime?: number;
@@ -35,6 +36,7 @@ interface TimelineProps {
   onLayerRenameCancel?: () => void;
   onAddVideoLayer?: () => void;
   onAddAudioLayer?: () => void;
+  draggingFromPalette?: { type: "text" | "code" | "audio" | "gif"; duration: number } | null;
 }
 
 export const Timeline: React.FC<TimelineProps> = ({
@@ -43,6 +45,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   onSegmentDelete,
   onSegmentReorder,
   onSegmentMove,
+  onSegmentCreate,
   selectedSegment,
   pixelsPerSecond = 100,
   currentTime = 0,
@@ -59,12 +62,14 @@ export const Timeline: React.FC<TimelineProps> = ({
   onLayerRenameCancel,
   onAddVideoLayer,
   onAddAudioLayer,
+  draggingFromPalette,
 }) => {
   const [draggedSegment, setDraggedSegment] = useState<{ trackId: string; index: number; segment: Segment; dragOffset: { x: number; y: number } } | null>(null);
   const [dragOverSegment, setDragOverSegment] = useState<{ trackId: string; index: number } | null>(null);
   const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false);
   const [dragPreview, setDragPreview] = useState<{ trackId: string; startTime: number } | null>(null);
   const [hasDragged, setHasDragged] = useState(false);
+  const [paletteDragPreview, setPaletteDragPreview] = useState<{ trackId: string; startTime: number } | null>(null);
   const timelineContainerRef = useRef<HTMLDivElement>(null);
   
   // Ensure layerRenameValue is always a string to prevent controlled/uncontrolled input warnings
@@ -237,6 +242,110 @@ export const Timeline: React.FC<TimelineProps> = ({
     };
   }, [draggedSegment, dragPreview, onSegmentMove, totalDuration, pixelsPerSecond, tracks, hasDragged]);
 
+  // Handle dragging from palette
+  React.useEffect(() => {
+    if (!draggingFromPalette) {
+      setPaletteDragPreview(null);
+      return;
+    }
+
+    const updatePaletteDragPreview = (e: MouseEvent | DragEvent) => {
+      if (!timelineContainerRef.current) {
+        setPaletteDragPreview(null);
+        return;
+      }
+
+      const rect = timelineContainerRef.current.getBoundingClientRect();
+      const scrollLeft = timelineContainerRef.current.scrollLeft;
+      const scrollTop = timelineContainerRef.current.scrollTop;
+      
+      const mouseX = e.clientX - rect.left + scrollLeft;
+      const mouseY = e.clientY - rect.top + scrollTop;
+
+      const targetTime = Math.max(0, Math.min(totalDuration - draggingFromPalette.duration, mouseX / pixelsPerSecond));
+      const snappedTime = Math.round(targetTime * 10) / 10;
+
+      const rulerHeight = 56;
+      let currentY = rulerHeight;
+      let targetTrackId: string | null = null;
+
+      if (tracks.length > 0 && tracks[0]?.type === "video") {
+        currentY += 24;
+      }
+
+      for (let i = 0; i < tracks.length; i++) {
+        const track = tracks[i];
+        const trackHeight = track.height || 30;
+        
+        if (track.type === "audio" && i > 0 && tracks[i - 1]?.type === "video") {
+          currentY += 24;
+        }
+
+        const isCompatible = draggingFromPalette.type === "audio" 
+          ? track.type === "audio"
+          : track.type === "video";
+
+        if (mouseY >= currentY && mouseY < currentY + trackHeight && isCompatible) {
+          targetTrackId = track.id;
+          break;
+        }
+
+        currentY += trackHeight;
+      }
+
+      if (targetTrackId) {
+        setPaletteDragPreview({ trackId: targetTrackId, startTime: snappedTime });
+      } else {
+        setPaletteDragPreview(null);
+      }
+    };
+
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      updatePaletteDragPreview(e);
+    };
+
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault();
+      // The drop is handled by the track's onDrop handler
+      setPaletteDragPreview(null);
+      document.body.style.userSelect = "";
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      updatePaletteDragPreview(e);
+    };
+
+    const handleMouseUp = () => {
+      // Use the current paletteDragPreview state via closure
+      setPaletteDragPreview((currentPreview) => {
+        if (currentPreview && draggingFromPalette && onSegmentCreate) {
+          onSegmentCreate(
+            draggingFromPalette.type,
+            currentPreview.trackId,
+            currentPreview.startTime,
+            draggingFromPalette.duration
+          );
+        }
+        return null;
+      });
+      document.body.style.userSelect = "";
+    };
+
+    document.addEventListener('dragover', handleDragOver);
+    document.addEventListener('drop', handleDrop);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('dragover', handleDragOver);
+      document.removeEventListener('drop', handleDrop);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingFromPalette, onSegmentCreate, totalDuration, pixelsPerSecond, tracks]);
+
   return (
     <div className="w-full h-full flex flex-col min-h-0 bg-gradient-to-b from-[#0f0f0f] to-[#1a1a1a]">
     
@@ -274,7 +383,28 @@ export const Timeline: React.FC<TimelineProps> = ({
       )}
       <div 
         ref={timelineContainerRef}
-        className="timeline-scrollbar cursor-grab w-full bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0a0a0a] rounded-lg border border-unfocused-border-color/50 overflow-x-auto overflow-y-auto select-none flex-1 min-h-0 shadow-2xl"
+        className={cn(
+          "timeline-scrollbar w-full bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0a0a0a] rounded-lg border border-unfocused-border-color/50 overflow-x-auto overflow-y-auto select-none flex-1 min-h-0 shadow-2xl",
+          draggingFromPalette ? "cursor-copy" : "cursor-grab"
+        )}
+        onDragOver={(e) => {
+          if (draggingFromPalette) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+          }
+        }}
+        onDrop={(e) => {
+          if (draggingFromPalette && paletteDragPreview && onSegmentCreate) {
+            e.preventDefault();
+            onSegmentCreate(
+              draggingFromPalette.type,
+              paletteDragPreview.trackId,
+              paletteDragPreview.startTime,
+              draggingFromPalette.duration
+            );
+            setPaletteDragPreview(null);
+          }
+        }}
       >
         {/* Time Ruler */}
       <div 
@@ -415,6 +545,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                 className={cn(
                   "relative border-b border-unfocused-border-color/30 select-none transition-colors duration-200",
                   onSeek && "cursor-pointer hover:bg-black/10",
+                  draggingFromPalette && "cursor-copy",
                   trackIndex % 2 === 0 ? "bg-[#0f0f0f]/50" : "bg-[#0a0a0a]/50"
                 )}
                 style={{
@@ -424,6 +555,24 @@ export const Timeline: React.FC<TimelineProps> = ({
                   userSelect: "none",
                 }}
                 onClick={handleTimelineClick}
+                onDragOver={(e) => {
+                  if (draggingFromPalette) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "copy";
+                  }
+                }}
+                onDrop={(e) => {
+                  if (draggingFromPalette && paletteDragPreview && onSegmentCreate && paletteDragPreview.trackId === track.id) {
+                    e.preventDefault();
+                    onSegmentCreate(
+                      draggingFromPalette.type,
+                      paletteDragPreview.trackId,
+                      paletteDragPreview.startTime,
+                      draggingFromPalette.duration
+                    );
+                    setPaletteDragPreview(null);
+                  }
+                }}
               >
               {/* Track Label */}
               <div
@@ -533,6 +682,24 @@ export const Timeline: React.FC<TimelineProps> = ({
                     >
                       <div className="text-xs text-blue-300/80 font-medium">
                         {formatTime(dragPreview.startTime)}
+                      </div>
+                    </div>
+                  )}
+                  {/* Palette drag preview indicator - shows where new segment will be created */}
+                  {paletteDragPreview?.trackId === track.id && draggingFromPalette && (
+                    <div
+                      className="absolute rounded-lg border-2 border-dashed border-green-400/80 bg-green-500/20 z-40 pointer-events-none flex items-center justify-center"
+                      style={{
+                        left: `${paletteDragPreview.startTime * pixelsPerSecond}px`,
+                        width: `${draggingFromPalette.duration * pixelsPerSecond}px`,
+                        minWidth: "80px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                      }}
+                    >
+                      <div className="text-xs text-green-300/80 font-medium flex items-center gap-1">
+                        <span>{draggingFromPalette.type === "text" ? "📝" : draggingFromPalette.type === "code" ? "💻" : draggingFromPalette.type === "audio" ? "🔊" : "🎬"}</span>
+                        <span>{formatTime(paletteDragPreview.startTime)}</span>
                       </div>
                     </div>
                   )}

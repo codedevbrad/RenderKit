@@ -1,5 +1,7 @@
 import "../../styles/global.css";
 import { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "RenderKit Video Editor",
@@ -12,23 +14,30 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
+
 function Header() {
   return (
-    <header className="flex items-center justify-between px-6 py-3  border-b border-unfocused-border-color">
+    <header className="flex items-center justify-between py-4">
       {/* Left Section - Logo and Branding */}
-      <div className="flex items-center gap-3">
-        {/* Logo - Three overlapping circles */}
-        <div className="relative w-10 h-10 flex-shrink-0">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-blue-400"></div>
-          <div className="absolute bottom-0 left-0 w-5 h-5 rounded-full bg-orange-500"></div>
-          <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-red-500"></div>
+      <Link href="/">
+        <div className="flex items-center gap-3 bg-black py-4 pl-3 pr-10 rounded-lg shadow-2xl w-[250px]">
+              {/* Logo - Three overlapping circles */}
+              <div className="relative w-10 h-10 flex-shrink-0">
+                <div className="absolute top-0.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-blue-400"></div>
+                <div className="absolute bottom-0 left-0 w-5 h-5 rounded-full bg-orange-500"></div>
+                <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-red-500"></div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-white font-semibold text-sm"> RenderKit </span>
+                <span className="text-gray-400 text-xs">Video Editor</span>
+              </div>
         </div>
-        <div className="flex flex-col">
-          <span className="text-white font-semibold text-sm"> RenderKit </span>
-          <span className="text-gray-400 text-xs">Video Editor</span>
-        </div>
-      </div>
-
+      </Link>
      
       {/* Center Section - Project Path */}
       <div className="flex-1 flex items-center justify-center">
@@ -69,8 +78,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full overflow-hidden">
-      <body className="bg-[#2D232E] h-full overflow-hidden flex flex-col p-10">
+    <html lang="en" className={`h-full overflow-hidden ${inter.variable}`}>
+      <body className="bg-[#2D232E] h-full overflow-hidden flex flex-col p-10 text-white font-sans antialiased">
         <Header />
         <main className="flex-1 overflow-hidden">{children}</main>
       </body>
