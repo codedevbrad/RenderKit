@@ -262,7 +262,10 @@ export const Timeline: React.FC<TimelineProps> = ({
       const mouseX = e.clientX - rect.left + scrollLeft;
       const mouseY = e.clientY - rect.top + scrollTop;
 
-      const targetTime = Math.max(0, Math.min(totalDuration - draggingFromPalette.duration, mouseX / pixelsPerSecond));
+      // Center the segment on the cursor position
+      const cursorTime = mouseX / pixelsPerSecond;
+      const halfDuration = draggingFromPalette.duration / 2;
+      const targetTime = Math.max(0, Math.min(totalDuration - draggingFromPalette.duration, cursorTime - halfDuration));
       const snappedTime = Math.round(targetTime * 10) / 10;
 
       const rulerHeight = 56;
