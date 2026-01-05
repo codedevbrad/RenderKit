@@ -1,11 +1,10 @@
 import { z } from "zod";
-import { AlignEnd } from "./AlignEnd";
-import { Button } from "./Button";
-import { InputContainer } from "./Container";
-import { DownloadButton } from "./DownloadButton";
-import { ErrorComp } from "./Error";
-import { ProgressBar } from "./ProgressBar";
-import { Spacing } from "./Spacing";
+import { AlignEnd } from "../components/AlignEnd";
+import { Button } from "../components/Button";
+import { DownloadButton } from "../components/DownloadButton";
+import { ErrorComp } from "../components/Error";
+import { ProgressBar } from "../components/ProgressBar";
+import { Spacing } from "../components/Spacing";
 import { COMP_NAME, CompositionProps, Segment } from "../../types/constants";
 import { useRendering } from "../helpers/use-rendering";
 
@@ -13,16 +12,16 @@ export const RenderControls: React.FC<{
   segments: Segment[];
   setSegments: React.Dispatch<React.SetStateAction<Segment[]>>;
   inputProps: z.infer<typeof CompositionProps>;
-}> = ({ segments, setSegments, inputProps }) => {
+}> = ({ segments, inputProps }) => {
   const { renderMedia, state, undo } = useRendering(COMP_NAME, inputProps);
 
   return (
-    <InputContainer>
+    <div className="my-5">
       {state.status === "init" ||
       state.status === "invoking" ||
       state.status === "error" ? (
         <>
-          <AlignEnd>
+         
             <Button
               disabled={state.status === "invoking" || segments.length === 0}
               loading={state.status === "invoking"}
@@ -30,7 +29,6 @@ export const RenderControls: React.FC<{
             >
               Render video
             </Button>
-          </AlignEnd>
           {state.status === "error" ? (
             <ErrorComp message={state.error.message}></ErrorComp>
           ) : null}
@@ -47,6 +45,6 @@ export const RenderControls: React.FC<{
           </AlignEnd>
         </>
       ) : null}
-    </InputContainer>
+    </div>
   );
 };
